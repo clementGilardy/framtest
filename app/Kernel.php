@@ -6,4 +6,7 @@ class Kernel
 		$modules = array();
 		return $modules;
 	}
+	
+	public function load(){
+	}
 }
