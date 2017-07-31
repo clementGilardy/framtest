@@ -1,12 +1,22 @@
 <?php
 
+require_once __DIR__.'/Autoload.php';
+
 class Kernel
 {
-	public function registersModules(){
-		$modules = array();
-		return $modules;
-	}
-	
-	public function load(){
-	}
+    private $env;
+    
+    public function __construct($env){
+        $this->$env = $env;
+    }
+    
+    public function registersModules(){
+            $modules = array();
+            return $modules;
+    }
+
+    public function load(){
+        $autoload = new Autoload();
+        $autoload->load();
+    }
 }
