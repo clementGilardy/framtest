@@ -1,5 +1,4 @@
 <?php
-
 require_once __DIR__.'/Autoload.php';
 
 class Kernel
@@ -16,7 +15,6 @@ class Kernel
     }
 
     public function load(){
-        $autoload = new Autoload();
-        $autoload->load();
+        new Autoload();
     }
 }
