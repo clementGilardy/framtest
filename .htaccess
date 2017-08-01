@@ -1,0 +1,2 @@
+RewriteEngine on
+DirectoryIndex /framtest/web/index.php

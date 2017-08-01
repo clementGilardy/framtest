@@ -1,7 +1,6 @@
 <?php
 class Autoload
 {
-    
     private $dirs;
     /**
      * Load all class
@@ -10,8 +9,8 @@ class Autoload
     public function __construct(){
         
         $dirs = array(
-            __DIR__.'/../src/',
-            __DIR__.'/../happy/'
+            __DIR__.'/../happy/',
+            __DIR__.'/../src/'
         );
         
         foreach($dirs as $dir){
@@ -47,11 +46,11 @@ class Autoload
             $dirs = scandir($fileOrDir);
             foreach ($dirs as $file){
                 if(!$this->isDoteFile($file)){
-                    if(is_file($file) && $this->isPhpFile($file)) {
+                    if(is_file($fileOrDir.'/'.$file) && $this->isPhpFile($file)) {
                         require_once $fileOrDir.'/'.$file;
                     }  
-                    
-                    if (is_dir($file)){
+                   
+                    if (is_dir($fileOrDir.'/'.$file)){
                         $this->loadClass($fileOrDir.'/'.$file);
                     }
                 }
