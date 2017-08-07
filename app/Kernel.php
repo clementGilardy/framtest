@@ -18,4 +18,8 @@ class Kernel
     public function load(){
         new Autoload();
     }
+    
+    public function loadRouterRules(Router $router){
+        
+    }
 }

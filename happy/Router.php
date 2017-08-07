@@ -104,6 +104,7 @@ class Router {
      */
     function __construct() {
         $this->rules = array();
+        $this->path = $this->feelPathController();
         $this->defaultController = 'index';
         $this->defaultAction = 'index';
         $this->errorController = 'error';
@@ -117,6 +118,7 @@ class Router {
     public function load() {
         $url = $_SERVER['REQUEST_URI'];
         $script = $_SERVER['SCRIPT_NAME'];
+        
         //Permet de nettoyer l'url des �ventuels sous dossier
         $tabUrl = $this->formatUrl($url, $script);
         if($tabUrl[0] == ''){
@@ -132,20 +134,27 @@ class Router {
                 if ($params) {
                     $this->controller = $data['controller'];
                     $this->action = $data['action'];
-                    $this->params = $params;
+                    if($params != 1){
+                        $this->params = $params;
+                    }
                     $isCustom = true;
                     break;
-                }
+                } 
             }
         }
-
-       // if (!$isCustom)
-        //    $this->getRoute($tabUrl);
-
+            
         $this->controller = (!empty($this->controller)) ? $this->controller : $this->defaultController;
         $this->action = (!empty($this->action)) ? $this->action : $this->defaultAction;
+
         $ctrlPath = str_replace('_', DIRECTORY_SEPARATOR, $this->controller); // Gestion des sous dossiers dans les controllers
-        $this->file = realpath($this->path) . DIRECTORY_SEPARATOR . $ctrlPath . '.php';
+ 
+        foreach($this->path as $path){
+            $pathExplode = explode('/',$path);
+            $ctrl = substr($pathExplode[5], 0,-4);
+            if($ctrl == $ctrlPath){
+                $this->file = $path;
+            }
+        }
         
         //is_file bien plus rapide que file_exists
         if (!is_file($this->file)) {
@@ -156,17 +165,20 @@ class Router {
         }
         
         $class = $this->controller;
-        if (!empty($this->codeLangue))
-            $controller = new $class($this->getParameters(), $this->codeLangue);
-        else
-            $controller = new $class($this->getParameters());
+      
+        $controller = new $class($this->getParameters());
 
         if (!is_callable(array($controller, $this->action)))
             $action = $this->defaultAction;
         else
             $action = $this->action;
-
-        $controller->$action();
+        
+        if(!empty($this->params)){
+            $stringParam = implode(',', $this->params);
+            $controller->$action($stringParam);
+        } else {
+            $controller->$action();
+        }
     }
 
     /**
@@ -181,6 +193,42 @@ class Router {
         
         $this->rules[$rule] = $target;
     }
+    
+    public function matchRules($rule, $dataItems) {
+        $find = false;
+        $result = array();
+        $ruleItems = explode('/', $rule);
+        $this->clear_empty_value($ruleItems);
+        if(empty($ruleItems)){
+            $ruleItems = array('/');
+        }
+        
+        if (count($ruleItems) == count($dataItems)) {
+            $result = array();
+            foreach ($ruleItems as $rKey => $rValue) {
+                if($ruleItems == $dataItems){
+                    $find = true;
+                }
+            }
+        }
+        
+        foreach ($ruleItems as $rKey => $rValue) {
+            if ($rValue[0] == ':') {
+                $rValue = substr($rValue, 1); //Supprime les : de la cl�
+                $result[$rValue] = $dataItems[$rKey];
+            } else {
+                if ($rValue != $dataItems[$rKey]) {
+                    return false;
+                }
+            }
+        }
+        
+        if(!empty($result)){
+            return $result;
+        } else {
+            return $find;   
+        }       
+    }
 
     /**
      * V�rifie si l'url correspond � une r�gle de routage
@@ -189,7 +237,7 @@ class Router {
      * @param array $dataItems
      * @return boolean|array
      */
-    public function matchRules($rule, $dataItems) {
+    /*public function matchRules($rule, $dataItems) {
         $ruleItems = explode('/', $rule);
         $this->clear_empty_value($ruleItems);
         if(empty($ruleItems)){
@@ -202,8 +250,9 @@ class Router {
                     $rValue = substr($rValue, 1); //Supprime les : de la cl�
                     $result[$rValue] = $dataItems[$rKey];
                 } else {
-                    if ($rValue != $dataItems[$rKey])
+                    if ($rValue != $dataItems[$rKey]) {
                         return false;
+                    }
                 }
             }
             if (!empty($result))
@@ -212,7 +261,7 @@ class Router {
             unset($result);
         }
         return false;
-    }
+    }*/
 
     /**
      * D�fini une route simple
@@ -252,20 +301,7 @@ class Router {
             }
         }
     }
-
-    /**
-     * D�fini le chemin des controllers
-     * @param string $path
-     */
-    public function setPath($path) {
-        if (is_dir($path) === false) {
-            echo 'Invalide controller : '.$path;
-            //throw new Exception('Controller invalide : ' . $path);
-        }
-
-        $this->path = $path;
-    }
-
+    
     /**
      * D�fini le router comme pouvant g�rer ou non le multinlangue
      * @param boolean $is 
@@ -355,4 +391,34 @@ class Router {
         }
         return array_values($tabUrl);
     }
+    
+    private function feelPathController(){
+        $pathController = __DIR__.'/../src';
+        $dirsControllers = scandir($pathController);
+        $path = array();
+        foreach ($dirsControllers as $dir){
+            if($dir != '.' && $dir != '..'){
+                $newPath = $pathController.'/'.$dir;
+                $file = $newPath.'/controller/'.$dir.'Controller.php';
+                if(is_file($file)){
+                    $path[] = $file;
+                }
+            }
+        }
+        return $path;
+    }
+    
+    /**
+     * Check if the file is a php file
+     * 
+     * @param type $file
+     * @return boolean
+     */
+    private function isPhpFile($file){
+        $isPhpFile = false;
+        $info = new SplFileInfo($file);
+        if($info->getExtension() == 'php')
+            $isPhpFile = true;
+    }
+        
 }

@@ -2,7 +2,7 @@
 class Controller {
     
     private $twig;
-    public $params;
+    protected $params;
     
     public function __construct($params){
         $templates = array(__DIR__.'/../app/Ressources/',__DIR__.'/../src/Home/views/');
