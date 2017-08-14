@@ -17,9 +17,8 @@ class Kernel
 
     public function load(){
         new Autoload();
-    }
-    
-    public function loadRouterRules(Router $router){
-        
+        $router = new Router();
+        $router->setDefaultControllerAction('HomeController','index');
+        $router->load();
     }
 }

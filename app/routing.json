@@ -1,0 +1,14 @@
+{
+    "/":{
+        "controller":"HomeController",
+        "action":"index"
+    },
+    "/create":{
+        "controller":"HomeController",
+        "action":"create"
+    },
+    "/show/:id":{
+        "controller":"HomeController",
+        "action":"show"
+    }
+}

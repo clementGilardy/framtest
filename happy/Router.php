@@ -1,25 +1,5 @@
 <?php
 
-/**
- * @author Olivier ROGER <roger.olivier[ at ]gmail.com>
- * @version $Revision: 231 $
- * @license Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
- */
-
-/**
- * Router permettant la mise en place du pattern MVC
- * Permet un routage simple ou � base de r�gle de routage.
- * Supporte �galement le routage multilingue
- * 
- * @version 1.2.2
- * @copyright  2007-2012 Olivier ROGER <roger.olivier[ at ]gmail.com>
- *
- * <code>
- * $router = Router::getInstance();
- * $router->setPath(ROOT_PATH.'includes/controllers/'); // Chemin vers les controlleurs
- * $router->addRule('test/regles/:id/hello',array('controller'=>'index','action'=>'withRule'));
- * </code>
- */
 class Router {
     /**
      * Controller � utiliser. Par defaut index
@@ -80,35 +60,18 @@ class Router {
      * @var string
      */
     private $errorAction;
-
-    /**
-     * Le router g�re t'il les url du type site.com/fr/controller/action
-     * @var boolean 
-     */
-    private $isMultiLangue = false;
-
-    /**
-     * Code langue choisie
-     * @var string 
-     */
-    private $codeLangue = '';
-
-    /**
-     * Liste des traductions pour les url multilingues
-     * @var array 
-     */
-    private $tradController;
     
     /**
      * Construct
      */
     function __construct() {
-        $this->rules = array();
+        $this->rules = $this->feelRules();
         $this->path = $this->feelPathController();
         $this->defaultController = 'index';
         $this->defaultAction = 'index';
         $this->errorController = 'error';
         $this->errorAction = 'index';
+        
     }
    
     /**
@@ -180,19 +143,6 @@ class Router {
             $controller->$action();
         }
     }
-
-    /**
-     * Ajoute une r�gle de routage.
-     *
-     * @param string $rule R�gles de routage : /bla/:param1/blabla/:param2/blabla
-     * @param array $target Cible de la r�gle : array('controller'=>'index','action'=>'test')
-     */
-    public function addRule($rule, $target) {
-        if ($rule[0] != '/')
-            $rule = '/' . $rule; //Ajout du slashe de d�but si absent
-        
-        $this->rules[$rule] = $target;
-    }
     
     public function matchRules($rule, $dataItems) {
         $find = false;
@@ -229,40 +179,7 @@ class Router {
             return $find;   
         }       
     }
-
-    /**
-     * V�rifie si l'url correspond � une r�gle de routage
-     * @link http://blog.sosedoff.com/2009/07/04/simpe-php-url-routing-controller/
-     * @param string $rule
-     * @param array $dataItems
-     * @return boolean|array
-     */
-    /*public function matchRules($rule, $dataItems) {
-        $ruleItems = explode('/', $rule);
-        $this->clear_empty_value($ruleItems);
-        if(empty($ruleItems)){
-            $ruleItems = array('/');
-        }
-        if (count($ruleItems) == count($dataItems)) {
-            $result = array();
-            foreach ($ruleItems as $rKey => $rValue) {
-                if ($rValue[0] == ':') {
-                    $rValue = substr($rValue, 1); //Supprime les : de la cl�
-                    $result[$rValue] = $dataItems[$rKey];
-                } else {
-                    if ($rValue != $dataItems[$rKey]) {
-                        return false;
-                    }
-                }
-            }
-            if (!empty($result))
-                return $result;
-
-            unset($result);
-        }
-        return false;
-    }*/
-
+    
     /**
      * D�fini une route simple
      * @param array $url
@@ -302,36 +219,12 @@ class Router {
         }
     }
     
-    /**
-     * D�fini le router comme pouvant g�rer ou non le multinlangue
-     * @param boolean $is 
-     */
-    public function setMultiLangue($is) {
-        $this->isMultiLangue = $is;
+    public function feelRules(){
+        $pathRules = __DIR__.'/routing.json';
+        $rawRules = file_get_contents(__DIR__."/../app/routing.json");
+        return json_decode($rawRules,true);
     }
-
-    /**
-     * D�fini un tableau permettant d'avoir des URL multi langue.
-     * Format du tableau : 
-     * 
-     * @param array $trad format : 
-     * $urlTraduction = array(
-      'fr'=>array(
-      'accueil'=>array(
-      'controllerName'	=> 'index',
-      'actionsNames'		=> array(
-      'presentation'	=> 'index',
-      'liste'			=> 'list',
-      'recherche'		=> 'search'
-      )
-      )
-      ),
-      'en'=>array(...));
-     */
-    public function setControllerTraduction($trad) {
-        $this->tradController = $trad;
-    }
-
+  
     /**
      * D�fini le controller et l'action par d�faut
      * @param string $controller
