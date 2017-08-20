@@ -1,5 +1,11 @@
 <?php
-
+/**
+ * @author Clément Gilardy <clement.gilardy@outlook.fr>
+ * @copyright (c) 2017, Clément Gilardy
+ * @class Router
+ * 
+ * Catch route and check with the router
+ */
 class Router {
     /**
      * Controller � utiliser. Par defaut index
@@ -48,94 +54,44 @@ class Router {
      * @var string
      */
     private $defaultAction;
-
-    /**
-     * Controller � appeler en cas d'erreur. Par defaut error
-     * @var string
-     */
-    private $errorController;
-
-    /**
-     * Action � appeler en cas d'erreur. par defaut index
-     * @var string
-     */
-    private $errorAction;
-    
+   
     /**
      * Construct
      */
     function __construct() {
         $this->rules = $this->feelRules();
         $this->path = $this->feelPathController();
-        $this->defaultController = 'index';
-        $this->defaultAction = 'index';
-        $this->errorController = 'error';
-        $this->errorAction = 'index';
-        
     }
    
     /**
-     * Charge le controller demand�.
-     * Prend en compte les r�gles de routages si n�cessaire
+     * load the ask controller
      */
     public function load() {
         $url = $_SERVER['REQUEST_URI'];
         $script = $_SERVER['SCRIPT_NAME'];
         
-        //Permet de nettoyer l'url des �ventuels sous dossier
+        //clean the url
         $tabUrl = $this->formatUrl($url, $script);
-        if($tabUrl[0] == ''){
+        
+        if(empty($tabUrl[0]) || $tabUrl[0] == ''){
             $tabUrl = array('/');
         }
-        $isCustom = false;
-
-        //Supression des �ventuelles parties vides de l'url
-        $this->clear_empty_value($tabUrl);
-        if (!empty($this->rules)) {
-            foreach ($this->rules as $key => $data) {
-                $params = $this->matchRules($key, $tabUrl);
-                if ($params) {
-                    $this->controller = $data['controller'];
-                    $this->action = $data['action'];
-                    if($params != 1){
-                        $this->params = $params;
-                    }
-                    $isCustom = true;
-                    break;
-                } 
-            }
-        }
-            
-        $this->controller = (!empty($this->controller)) ? $this->controller : $this->defaultController;
-        $this->action = (!empty($this->action)) ? $this->action : $this->defaultAction;
-
-        $ctrlPath = str_replace('_', DIRECTORY_SEPARATOR, $this->controller); // Gestion des sous dossiers dans les controllers
- 
-        foreach($this->path as $path){
-            $pathExplode = explode('/',$path);
-            $ctrl = substr($pathExplode[5], 0,-4);
-            if($ctrl == $ctrlPath){
-                $this->file = $path;
-            }
-        }
         
-        //is_file bien plus rapide que file_exists
-        if (!is_file($this->file)) {
-            header("Status: 404 Not Found");
-            $this->controller = $this->errorController;
-            $this->action = $this->errorAction;
-            $this->file = $this->path . $this->controller . '.php';
-        }
+        //feel params, controler and action
+        $this->feelsParamsAndActionController($tabUrl);
         
-        $class = $this->controller;
-      
-        $controller = new $class($this->getParameters());
+        //feel file (contains link to controller
+        $this->file = $this->feelFile();
+        
+        //we instance the controller
+        $controller = new $this->controller($this->params);
 
-        if (!is_callable(array($controller, $this->action)))
+        if (!is_callable(array($controller, $this->action))) {
             $action = $this->defaultAction;
-        else
+        } else {
             $action = $this->action;
-        
+        }
+
         if(!empty($this->params)){
             $stringParam = implode(',', $this->params);
             $controller->$action($stringParam);
@@ -144,6 +100,13 @@ class Router {
         }
     }
     
+    /**
+     * Check if the rules are the same
+     * 
+     * @param type $rule
+     * @param type $dataItems
+     * @return boolean
+     */
     public function matchRules($rule, $dataItems) {
         $find = false;
         $result = array();
@@ -181,44 +144,29 @@ class Router {
     }
     
     /**
-     * D�fini une route simple
-     * @param array $url
+     * feel the controller and the action and the params
+     * @param array $tabUrl
      */
-    private function getRoute($url) {
-        $items = $url;
-
-        if (!empty($items)) {
-            if ($this->isMultiLangue)
-                $this->codeLangue = array_shift($items);
-
-            $this->controller = array_shift($items);
-            $this->action = array_shift($items);
-            $size = count($items);
-            if ($size >= 2)
-                for ($i = 0; $i < $size; $i += 2) {
-                    $key = (isset($items[$i])) ? $items[$i] : $i;
-                    $value = (isset($items[$i + 1])) ? $items[$i + 1] : null;
-                    $this->params[$key] = $value;
-                } else
-                $this->params = $items;
-
-            //Permet d'avoir des URL multilingue
-            if (!empty($this->tradController)) {
-                if (isset($this->tradController[$this->codeLangue][$this->controller]['controllerName'])) {
-                    $controller = $this->tradController[$this->codeLangue][$this->controller]['controllerName'];
-                    if (!empty($controller))
-                        $this->controller = $controller;
-                }
-
-                if (isset($this->tradController[$this->codeLangue][$this->controller]['actionsNames'][$this->action])) {
-                    $action = $this->tradController[$this->codeLangue][$this->controller]['actionsNames'][$this->action];
-                    if (!empty($action))
-                        $this->action = $action;
-                }
+    private function feelsParamsAndActionController($tabUrl){
+         if (!empty($this->rules)) {
+            foreach ($this->rules as $key => $data) {
+                $params = $this->matchRules($key, $tabUrl);
+                if ($params) {
+                    $this->controller = $data['controller'];
+                    $this->action = $data['action'];
+                    if($params != 1){
+                        $this->params = $params;
+                    }
+                    break;
+                } 
             }
         }
     }
-    
+       
+    /**
+     * Return all rules present in the json file routing.json
+     * @return array
+     */
     public function feelRules(){
         $pathRules = __DIR__.'/routing.json';
         $rawRules = file_get_contents(__DIR__."/../app/routing.json");
@@ -233,24 +181,6 @@ class Router {
     public function setDefaultControllerAction($controller, $action) {
         $this->defaultController = $controller;
         $this->defaultAction = $action;
-    }
-
-    /**
-     * D�fini le controller et l'action en cas d'erreur
-     * @param string $controler
-     * @param string $action
-     */
-    public function setErrorControllerAction($controller, $action) {
-        $this->errorController = $controller;
-        $this->errorAction = $action;
-    }
-
-    /**
-     * Renvoi les param�tres disponibles
-     * @return array
-     */
-    public function getParameters() {
-        return $this->params;
     }
 
     /**
@@ -285,6 +215,10 @@ class Router {
         return array_values($tabUrl);
     }
     
+    /**
+     * Return an array of all controller of the application
+     * @return array
+     */
     private function feelPathController(){
         $pathController = __DIR__.'/../src';
         $dirsControllers = scandir($pathController);
@@ -302,16 +236,16 @@ class Router {
     }
     
     /**
-     * Check if the file is a php file
-     * 
-     * @param type $file
-     * @return boolean
+     * feel $this->file which contains real path of controller
      */
-    private function isPhpFile($file){
-        $isPhpFile = false;
-        $info = new SplFileInfo($file);
-        if($info->getExtension() == 'php')
-            $isPhpFile = true;
+    private function feelFile(){
+         foreach($this->path as $path){
+            $pathExplode = explode('/',$path);
+            $ctrl = substr($pathExplode[5], 0,-4);
+            if($ctrl == $this->controller){
+                $this->file = $path;
+            }
+        }
     }
         
 }

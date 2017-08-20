@@ -1,0 +1,7 @@
+{
+    "happy:module:add": "add a module",
+    "happy:module:delete":"delete a module",
+    "happy:route:add":"add a route",
+    "happy:route:delete":"delete a route",
+    "happy:help":"display help"
+}
