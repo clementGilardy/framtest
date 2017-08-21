@@ -44,7 +44,7 @@ class Kernel
         try {
             $router->load();
         } catch (Exception $ex) {
-            echo 'euh...';
+            echo 'euh... ->'.$ex->getMessage();
         }
         
     }

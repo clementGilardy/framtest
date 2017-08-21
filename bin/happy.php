@@ -9,5 +9,5 @@ try{
 } catch (ApplicationException $ex) {
     echo $ex->getMessage();
 } catch(Exception $ex){
-    echo "Why doesn't work ??";
+    echo "Why doesn't work ?? $ex->getMessage()";
 }
